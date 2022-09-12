@@ -52,22 +52,29 @@ module dot_apt_registrar::reverse_registrar {
         name_id
     }
 
-    /// DO NOT USE in production, just for demostration.
-    /// We need to implement an actual encoding
-    /// schema for vector<u8> to utf8 string.
-    /// returns a hex string representation of **BCS** encoding of an address.
+    /// returns hex-encoded string of @p addr.
+    /// TODO: we should replace this function when there is a
+    /// native implementation of address hex encoding.
     fun address_to_hex(addr: address) : String {
         let hex_chars: vector<u8> = b"0123456789ABCDEF";
         let bytes = bcs::to_bytes(&addr);
         let char_vec = vector::empty<u8>();
         while (vector::length(&bytes) > 0) {
             let v: u8 = vector::pop_back(&mut bytes);
-            let (_, mod) = vector::index_of(&hex_chars, &(v % 16));
-            let (_, div) = vector::index_of(&hex_chars, &(v / 16));
+            let mod = *vector::borrow(&hex_chars, ((v % 16) as u64));
+            let div = *vector::borrow(&hex_chars, ((v / 16) as u64));
             vector::push_back(&mut char_vec, (mod as u8));
             vector::push_back(&mut char_vec, (div as u8));
         };
         vector::reverse(&mut char_vec);
         string::utf8(char_vec)
     }
+
+    #[test(addr = @0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)]
+    fun test_address_to_hex(addr: address) {
+        let rst = address_to_hex(addr);
+        assert!(vector::length(string::bytes(&rst)) == 64, 1);
+        assert!(*vector::borrow(string::bytes(&rst), 11) == 70, 1); // 'F' is 70
+    }
+
 }
