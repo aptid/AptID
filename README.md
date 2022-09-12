@@ -5,7 +5,7 @@ Apt.ID is a name service built on Aptos! It is written in Move with following pr
    + Approve or withdraw pricing strategies, naming rules, and registration requirement (e.g., commit-and-reveal, or merkle-proof) through the 'dynamic registrar' design.
 2. Flexible registrars: registration workflows can be very different for different TLDs, and also for different stages during public launch. Upgrading registrars should
    not touch the main protocol. We leverages Move's type system to enforce ACL rules between modules. See diagram below.
-3. You Own The Name: Once you have got the name, you own the name. You can freely transfer it, update records. The Apt.ID protocol does not have any power stop you.
+3. You Own The Name: Once you have got the name, you own the name. You can freely transfer it, or update records. The Apt.ID protocol does not have the power to stop you.
    The main protocol will be have `upgrade_policy = "immutable"` upon public launch. `Registrars` can be upgraded separately.
 4. Static and simple: Move does not have any form of dynamic dispatch. So unlike name services on other blockchains, which usually allow the owner to configure a resolver
    for the name, Apt.ID protocol simply attaches an `iterable_table<RecordKey, RecordValue>` to a Name for the owner to store resource records.
@@ -37,6 +37,11 @@ Registration flow on the protocol level:
 ```
 
 ## Development status
+
+Aptos Explorer links to deployed contracts:
++ [Devnet apt\_id packge](https://explorer.devnet.aptos.dev/account/0xc7050e4a5fce7292e0e7def652d70e79447fce2d6edb00a1e1fdb3d711978beb?network=Devnet) 
++ [Devnet dot\_apt\_tld packge](https://explorer.devnet.aptos.dev/account/0xfb3e8bc44d50e040c39bb7dc4cef28e93078e7c6bd3db16b05cac2a41ce2b5d8?network=Devnet) 
+
 We are still working on the first draft implementation, so anything can be drastically changed.
 Key features has been implemented and weekly deployed to devnet.
 
