@@ -1,0 +1,5 @@
+contracts/apt_id/build/
+contracts/dot_apt_tld/build/
+local-node/
+.aptos/testnet
+devnet/
