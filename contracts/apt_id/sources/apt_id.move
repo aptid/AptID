@@ -60,6 +60,7 @@ module apt_id::apt_id {
     }
 
     // ************ AptID Protocol Manager **********
+    // NOTE: management with rootCap is NOT USED at this moment.
     // subspace for Protocol level management error: [1000, 1999]
     const ENOT_APT_ID_MOD_PUBLISHER: u64 = 1000;
     const EALREADY_APT_ID_ROOT_OWNER: u64 = 1001;
@@ -208,8 +209,8 @@ module apt_id::apt_id {
     /// NOTE: This function does not handle:
     /// (1) pricing.
     /// (2) name validatation.
-    /// ACL through the ability to 'show' type T: modules
-    /// can obtain a resource of type T is the proof of being a qualified TLD owner.
+    /// ACL through the ability to 'show' type T.
+    /// Modules can obtain a resource of type T is the proof of being a qualified TLD owner.
     public fun register<T>(
         owner: &signer,
         name: String,

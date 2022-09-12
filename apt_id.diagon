@@ -1,4 +1,5 @@
 registrar -> apt_id: onboard()
+apt_id -> registrar: approve by save the secret type T.
 user -> registrar: register(name, fee, proof)
 registrar -> apt_id: register<T>(tld, validated_name, expiration.)
 apt_id -> user: Name("name.tld")
@@ -6,12 +7,16 @@ user:
 registrar:
 apt_id:
 
+======
  ┌────┐                  ┌─────────┐                                     ┌──────┐
  │user│                  │registrar│                                     │apt_id│
  └─┬──┘                  └────┬────┘                                     └──┬───┘
    │                          │                                             │
    │                          │                  onboard()                  │
    │                          │────────────────────────────────────────────>│
+   │                          │                                             │
+   │                          │     approve by save the secret type T.      │
+   │                          │<────────────────────────────────────────────│
    │                          │                                             │
    │register(name, fee, proof)│                                             │
    │─────────────────────────>│                                             │

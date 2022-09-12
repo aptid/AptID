@@ -1,4 +1,66 @@
 # Apt.ID
+Apt.ID is a name service built on Aptos! It is written in Move with following principles:
+1. Least privilege: The Apt.ID protocol only has the following privileges:
+   + Publish new Top-Level Domain (TLD). For example, initially we will launch the `*.apt`, and the reserve look-up domain `*.reverse`.
+   + Approve or withdraw pricing strategies, naming rules, and registration requirement (e.g., commit-and-reveal, or merkle-proof) through the 'dynamic registrar' design.
+2. Flexible registrars: registration workflows can be very different for different TLDs, and also for different stages during public launch. Upgrading registrars should
+   not touch the main protocol. We leverages Move's type system to enforce ACL rules between modules. See diagram below.
+3. You Own The Name: Once you have got the name, you own the name. You can freely transfer it, update records. The Apt.ID protocol does not have any power stop you.
+   The main protocol will be have `upgrade_policy = "immutable"` upon public launch. `Registrars` can be upgraded separately.
+4. Static and simple: Move does not have any form of dynamic dispatch. So unlike name services on other blockchains, which usually allow the owner to configure a resolver
+   for the name, Apt.ID protocol simply attaches an `iterable_table<RecordKey, RecordValue>` to a Name for the owner to store resource records.
+   Note that Aptos network allows you to run scripts in a transaction. You can encode dynamic behaviors into a script to achieve the same level of expressiveness.
+
+Registration flow on the protocol level:
+```
+ ┌────┐                  ┌─────────┐                                     ┌──────┐
+ │user│                  │registrar│                                     │apt_id│
+ └─┬──┘                  └────┬────┘                                     └──┬───┘
+   │                          │                                             │
+   │                          │                  onboard()                  │
+   │                          │────────────────────────────────────────────>│
+   │                          │                                             │
+   │                          │     approve by save the secret type T.      │
+   │                          │<────────────────────────────────────────────│
+   │                          │                                             │
+   │register(name, fee, proof)│                                             │
+   │─────────────────────────>│                                             │
+   │                          │                                             │
+   │                          │register<T>(tld, validated_name, expiration.)│
+   │                          │────────────────────────────────────────────>│
+   │                          │                                             │
+   │                          │  Name(name.tld)                             │
+   │<───────────────────────────────────────────────────────────────────────│
+ ┌─┴──┐                  ┌────┴────┐                                     ┌──┴───┐
+ │user│                  │registrar│                                     │apt_id│
+ └────┘                  └─────────┘                                     └──────┘
+```
+
+## Development status
+We are still working on the first draft implementation, so anything can be drastically changed.
+Key features has been implemented and weekly deployed to devnet.
+
+Implemented features are
+1. Core module of AptID protocol: `apt_id`.
+   + Add/Remove TLD registrars.
+   + Register a name if approved by the corresponding TLD registrar.
+   + Deposit and withdraw names and theirs events.
+   + Direct transfer owned Name.
+   + Update resource records.
+   + Burn expired `Name` resource.
+   + Getters for check the availability and the owner of a name.
+2. Registrars (under `dot_apt_tld` package)
+   + Sample `.apt` domain registrar `one_coin_registrar.move`: you can register a .apt name with
+     one coin per day.
+   + A `reverse_registrar` that allows any account to set `address.reverse` to a `*.apt` domain name.
+
+Ongoing efforts:
+1. More Getters for resource records.
+2. More EventHandles.
+3. Solution for linking name and aptos\_token (NFT). Currently aptos\_token can only be minted by owner,
+   which might not be decentralized enough for a name service. Workarounds might be that to mint many token 
+   upfront and link them with a Name upon registration.
+4. Misc better-engineering items noted as TODO in code.
 
 # Developer guide
 ## Install aptos core utils
@@ -31,6 +93,7 @@ We have most of commonly used commands saved in Makefile. The workflow is:
    and all registrars.
 5. You can visit Aptos explore and swtich to `local` to see trasactions of the test account:
    [Aptos explore for the test account](https://explorer.devnet.aptos.dev/account/0xf71cb5dc58c4290a2cc009ba5c87f389ca624e1d6b9b9135c2b4c43c1bb69cb6)
+6. Optional: If you are working on [aptid-ts](...), you can update `apt_id_abis.ts` file by `make ts-abi`.
 
 ## Random notes from hello_blockchain example.
 1. Create a new directory as home for your local testnet `mkdir local-node && cd local-node`.
