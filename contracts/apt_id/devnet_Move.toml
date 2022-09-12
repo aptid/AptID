@@ -1,0 +1,9 @@
+[package]
+name = "AptID"
+version = "0.0.1"
+
+[addresses]
+apt_id = "0x2db27b05ad027173601082ba75ce857926080f17b5890be76295571e15a73275"
+
+[dependencies]
+AptosFramework = { local = "../../aptos-core/aptos-move/framework/aptos-framework" }

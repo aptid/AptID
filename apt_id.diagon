@@ -1,0 +1,27 @@
+registrar -> apt_id: onboard()
+user -> registrar: register(name, fee, proof)
+registrar -> apt_id: register<T>(tld, validated_name, expiration.)
+apt_id -> user: Name("name.tld")
+user:
+registrar:
+apt_id:
+
+ ┌────┐                  ┌─────────┐                                     ┌──────┐
+ │user│                  │registrar│                                     │apt_id│
+ └─┬──┘                  └────┬────┘                                     └──┬───┘
+   │                          │                                             │
+   │                          │                  onboard()                  │
+   │                          │────────────────────────────────────────────>│
+   │                          │                                             │
+   │register(name, fee, proof)│                                             │
+   │─────────────────────────>│                                             │
+   │                          │                                             │
+   │                          │register<T>(tld, validated_name, expiration.)│
+   │                          │────────────────────────────────────────────>│
+   │                          │                                             │
+   │                          │  Name(name.tld)                             │
+   │<───────────────────────────────────────────────────────────────────────│
+ ┌─┴──┐                  ┌────┴────┐                                     ┌──┴───┐
+ │user│                  │registrar│                                     │apt_id│
+ └────┘                  └─────────┘                                     └──────┘
+
