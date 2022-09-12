@@ -42,7 +42,7 @@ module dot_apt_registrar::reverse_registrar {
         let name_str = address_to_hex(addr);
         let tld_name_id = apt_id::get_tld_lable_name_id(&tld());
         let name_id = apt_id::get_name_id_of(&tld_name_id, &name_str);
-        if (apt_id::is_owner_of(addr, name_id)) {
+        if (!apt_id::is_owner_of(addr, name_id)) {
             apt_id::register(
                 owner,
                 name_str,
