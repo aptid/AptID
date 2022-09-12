@@ -15,6 +15,10 @@ install-aptos-cli:
 run-local-node:
 	aptos node run-local-testnet --with-faucet # somehow test-dir option does not work: --test-dir local-node/
 
+.PHONY: purge-local-node
+purge-local-node:
+	rm -rf .aptos/testnet
+
 .PHONY: faucet
 faucet:
 	aptos account fund-with-faucet --account $(LOCAL_TEST_OWNER)

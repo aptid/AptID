@@ -1,11 +1,14 @@
-# Install aptos core utils
+# Apt.ID
+
+# Developer guide
+## Install aptos core utils
 ```
-# use version-locked git submodule aptos-core to install dependencies.
+# we use version-locked git submodule aptos-core to install dependencies.
 git submodule update --init --recursive
 cd aptos-core
 ```
 Follow this [install-aptos-cli-from-git](https://aptos.dev/cli-tools/aptos-cli-tool/install-aptos-cli/#install-from-git) to install aptos CLI.
-We will run our local testnet using the `devnet` branch, which is locked through git submodule.
+We will run our local testnet using the `devnet` branch, which is already locked through git submodule.
 
 NOTE: 32GB RAM is not enough to run 24 threads for compilation. use `-jN` to limit the number of threads to avoid OOM.
 
@@ -14,8 +17,22 @@ optional: Copy binary to a directory under PATH for ease-of-use.
 cp ./target/release/aptos ~/.cargo/bin/ 
 ```
 
-# Setup 
+## Let's go!
+A test account config is attached in this repository. It will be our module publisher for the local devnet.
+Its config is saved at `.aptos/config.yaml`.
 
+We have most of commonly used commands saved in Makefile. The workflow is:
+1. Start local Aptos node by `make run-local-node`. If you have made breaking changes to contracts,
+   you need to `make purge-local-node` to start from a clean state.
+2. Compile contracts by `make compile`. The test account address is configured to be the default address for all packages.
+3. You will need to run `make faucet` to fund the test account if you are starting from a clean state.
+   You might need to run it **multiple** times as our contracts might requires more coins than one free try:).
+4. Publish all packages to the local node by `make local-publish`. It will publish both the main AptID protocol module
+   and all registrars.
+5. You can visit Aptos explore and swtich to `local` to see trasactions of the test account:
+   [Aptos explore for the test account](https://explorer.devnet.aptos.dev/account/0xf71cb5dc58c4290a2cc009ba5c87f389ca624e1d6b9b9135c2b4c43c1bb69cb6)
+
+## Random notes from hello_blockchain example.
 1. Create a new directory as home for your local testnet `mkdir local-node && cd local-node`.
 2. Start a local aptos node by `aptos node run-local-testnet --with-faucet`.
 3. Enter hello\_blockchain example directory `cd aptos-core/aptos-move/move-examples/hello_blockchain`.
@@ -37,5 +54,4 @@ cp ./target/release/aptos ~/.cargo/bin/
 NOTE: If you got simulation error, you might not have the right configuration. Aptos is very strict
 in terms of move compiler version and 
 
-[Aptos explore for the test account](https://explorer.devnet.aptos.dev/account/0xf71cb5dc58c4290a2cc009ba5c87f389ca624e1d6b9b9135c2b4c43c1bb69cb6) 
    
