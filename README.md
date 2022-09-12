@@ -64,8 +64,10 @@ Ongoing efforts:
 2. More EventHandles.
 3. Solution for linking name and aptos\_token (NFT). Currently aptos\_token can only be minted by owner,
    which might not be decentralized enough for a name service. Workarounds might be that to mint many token 
-   upfront and link them with a Name upon registration.
+   upfront and link them with a Name upon registration. Different TLDs should be linked to different NFT collections.
 4. Misc better-engineering items noted as TODO in code.
+5. Reverse name must not be allowed to be *transfer* to others.
+6. Direct transfer is enabled by default, we need to add a way to disable direct transfer.
 
 # Developer guide
 ## Install aptos core utils
@@ -97,7 +99,7 @@ We have most of commonly used commands saved in Makefile. The workflow is:
 4. Publish all packages to the local node by `make local-publish`. It will publish both the main AptID protocol module
    and all registrars.
 5. You can visit Aptos explore and swtich to `local` to see trasactions of the test account:
-   [Aptos explore for the test account](https://explorer.devnet.aptos.dev/account/0xf71cb5dc58c4290a2cc009ba5c87f389ca624e1d6b9b9135c2b4c43c1bb69cb6)
+   [Aptos explore for the test account](https://explorer.devnet.aptos.dev/account/0xf71cb5dc58c4290a2cc009ba5c87f389ca624e1d6b9b9135c2b4c43c1bb69cb6?network=local)
 6. Optional: If you are working on [aptid-ts](...), you can update `apt_id_abis.ts` file by `make ts-abi`.
 
 ## Random notes from hello_blockchain example.
