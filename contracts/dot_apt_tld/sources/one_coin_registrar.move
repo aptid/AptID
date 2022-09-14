@@ -54,6 +54,20 @@ module dot_apt_registrar::one_coin_registrar {
             owner,
             name,
             apt_id::now() + duration,
+            true,
             &OneCoinRegistrar{});
     }
+
+    public entry fun renew_script(
+        owner: &signer,
+        amount: u64,
+        name: String) {
+        assert!(
+            amount > 0,
+            error::invalid_argument(EZERO_COIN_NOW_ALLOWED),
+        );
+        coin::transfer<aptos_coin::AptosCoin>(owner, revenue_account(), amount);
+        apt_id::renew_name(owner, name, amount * 3600 * 24, &OneCoinRegistrar{});
+    }
+
 }

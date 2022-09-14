@@ -49,7 +49,7 @@ Implemented features are
 1. Core module of AptID protocol: `apt_id`.
    + Add/Remove TLD registrars.
    + Register a name if approved by the corresponding TLD registrar.
-   + Deposit and withdraw names and theirs events.
+   + Deposit and withdraw names and their events.
    + Direct transfer owned Name.
    + Update resource records.
    + Burn expired `Name` resource.

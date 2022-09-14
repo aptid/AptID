@@ -47,6 +47,7 @@ module dot_apt_registrar::reverse_registrar {
                 owner,
                 name_str,
                 apt_id::now() + DURATION_1000_YEARS,
+                false,
                 &ReverseRegistrar{});
         };
         name_id

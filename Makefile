@@ -63,6 +63,7 @@ ts-abi:
 	$(call append_abi_hex_str,contracts/dot_apt_tld/build/DotAptTLD/abis/one_coin_registrar/onboard.abi,apt_id.abi)
 	$(call append_abi_hex_str,contracts/dot_apt_tld/build/DotAptTLD/abis/one_coin_registrar/resign.abi,apt_id.abi)
 	$(call append_abi_hex_str,contracts/dot_apt_tld/build/DotAptTLD/abis/one_coin_registrar/register_script.abi,apt_id.abi)
+	$(call append_abi_hex_str,contracts/dot_apt_tld/build/DotAptTLD/abis/one_coin_registrar/renew_script.abi,apt_id.abi)
 
 	$(call append_abi_hex_str,contracts/dot_apt_tld/build/DotAptTLD/abis/reverse_registrar/onboard.abi,apt_id.abi)
 	$(call append_abi_hex_str,contracts/dot_apt_tld/build/DotAptTLD/abis/reverse_registrar/resign.abi,apt_id.abi)
