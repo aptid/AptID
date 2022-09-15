@@ -39,7 +39,7 @@ Registration flow on the protocol level:
 ## Development status
 
 Aptos Explorer links to deployed contracts:
-+ [Devnet apt\_id packge](https://explorer.devnet.aptos.dev/account/0x045317f67a03b2c226eb2a468d91cea2ea92eaa7987a567288a36560a3b43414?network=Devnet)
++ [Devnet apt\_id packge](https://explorer.devnet.aptos.dev/account/0xd6f8440eabd59bfc0ca6dcf7bf864d206e9825e264faf14188af68a72f500bb9?network=Devnet)
 + [Devnet dot\_apt\_tld packge](https://explorer.devnet.aptos.dev/account/0x8add34212cbe560856ac610865f9bc2e4ac49b65739d58e7f2c87125d73bad02?network=Devnet)
 
 We are still working on the first draft implementation, so anything can be drastically changed.

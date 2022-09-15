@@ -3,7 +3,7 @@ name = "AptID"
 version = "0.0.1"
 
 [addresses]
-apt_id = "0x045317f67a03b2c226eb2a468d91cea2ea92eaa7987a567288a36560a3b43414"
+apt_id = "0xd6f8440eabd59bfc0ca6dcf7bf864d206e9825e264faf14188af68a72f500bb9"
 
 [dependencies]
 AptosFramework = { local = "../../aptos-core/aptos-move/framework/aptos-framework" }
