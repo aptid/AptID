@@ -198,6 +198,9 @@ module apt_id::apt_id {
     const ENAME_NOT_EXPIRED: u64 = 3002;
     const ENAME_NOT_OWNED_BY_ACCOUNT: u64 = 3003;
     const ENAME_REGISTER_EXPIRED_NAME: u64 = 3004;
+    const ENAME_NON_TRANSFERABLE: u64 = 3005;
+    const ENAME_DIRECT_TRANSFER_DISABLED: u64 = 3006;
+    const ENAME_OWNER_STORE_UNINITIALIZED: u64 = 3007;
 
     /// Register a name under the TLD of @p T.
     /// For example, if the module of T is allowed to register names under 'apt' TLD,
@@ -214,13 +217,14 @@ module apt_id::apt_id {
     public fun register<T>(
         owner: &signer,
         name: String,
-        expiredAt: u64,
+        expired_at: u64,
+        transferable: bool,
         keyType: &T) acquires RegistrarStore, OwnerListStore, NameOwnerStore {
         let tld: NameID = get_tld_of_registrar_type(keyType);
         let new_name_id = get_name_id_of(&tld, &name);
         // the new name must not be owned by anyone.
         assert!(
-            expiredAt > now(),
+            expired_at > now(),
             error::invalid_argument(ENAME_REGISTER_EXPIRED_NAME),
         );
         assert!(
@@ -230,24 +234,52 @@ module apt_id::apt_id {
         let name = Name {
             parent: tld,
             name: name,
-            expiredAt: expiredAt,
+            expired_at: expired_at,
+            transferable: transferable,
             records: iterable_table::new<RecordKey, RecordValue>(),
         };
-        deposit_name_safe(owner, name);
+        collect_name(owner, name);
     }
 
-    /// deposit @p name to @p owner. If @p owner does not have NameOwnerStore initialized
+    /// collect @p name to @p owner. If @p owner does not have NameOwnerStore initialized
     /// this function will also initialize it with signer's authority.
-    public fun deposit_name_safe(owner: &signer,
+    /// NOTE: direct_transfer is enabled by default.
+    public fun collect_name(
+        owner: &signer,
         name: Name) acquires NameOwnerStore, OwnerListStore {
         let owner_addr = signer::address_of(owner);
         initialize_name_owner_store(owner);
-        deposit_name(owner_addr, name)
+        deposit_name_internal(owner_addr, name)
     }
 
+    /// deposit @p name to @p owner_addr. Possible only when @p owner_addr enabled
+    /// direct_transfer.
     public fun deposit_name(
         owner_addr: address,
         name: Name) acquires NameOwnerStore, OwnerListStore {
+        assert!(
+            exists<NameOwnerStore>(owner_addr),
+            error::not_found(ENAME_OWNER_STORE_UNINITIALIZED),
+        );
+        let owner_store = borrow_global<NameOwnerStore>(owner_addr);
+        assert!(
+            owner_store.enable_direct_transfer,
+            error::permission_denied(ENAME_DIRECT_TRANSFER_DISABLED));
+        deposit_name_internal(owner_addr, name)
+    }
+
+    /// deposit name to @p owner_addr, private function.
+    /// premise:
+    /// (1) caller should check if OwnerStore is initialized.
+    /// (2) caller should check if direct_transfer is enabled.
+    /// Expired name can never be deposited.
+    fun deposit_name_internal(
+        owner_addr: address,
+        name: Name) acquires NameOwnerStore, OwnerListStore {
+        assert!(
+            !is_name_expired(&name),
+            error::permission_denied(ENAME_EXPIRED)
+        );
         let name_id = get_name_id(&name);
         // move name to owner
         let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
@@ -262,6 +294,7 @@ module apt_id::apt_id {
         );
     }
 
+    /// withdraw the NAME of @p name_id from @p owner.
     public fun withdraw_name(
         owner: &signer,
         name_id: NameID) : Name acquires NameOwnerStore, OwnerListStore {
@@ -272,32 +305,73 @@ module apt_id::apt_id {
         let _ = table::remove(&mut owner_list_store.owners, name_id);
         // update owner store
         let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
-        // update event
         // emit events
         event::emit_event<NameWithdrawEvent>(
             &mut owner_store.withdraw_events,
             NameWithdrawEvent { id: name_id },
         );
         // extract name from owner store.
-        table::remove(
+        let name = table::remove(
             &mut owner_store.names,
             name_id,
-        )
+        );
+        assert!(
+            name.transferable,
+            error::invalid_argument(ENAME_NON_TRANSFERABLE),
+        );
+        assert!(
+            !is_name_expired(&name),
+            error::not_found(ENAME_EXPIRED),
+        );
+        name
     }
 
-    public entry fun direct_transfer(from: &signer, to: address, name_id: NameID)
+    /// transfer @p name_id Name owned by @p from to @p to.
+    /// TODO: Typescript tx builder does not support user-defined struct arg,
+    /// so we destruct it into name and tld, instead of a NameID.
+    public entry fun direct_transfer(from: &signer, to: address, name: String, tld: String)
         acquires NameOwnerStore, OwnerListStore {
+        let name_id = get_name_id_of(&get_tld_lable_name_id(&tld), &name);
         let name = withdraw_name(from, name_id);
         deposit_name(to, name);
     }
 
+    /// renew an unexpired name.
+    /// TODO: allow user to renew name for names owned by others?
+    public fun renew_name<T>(
+        owner: &signer,
+        name: String,
+        additional_duration_seconds: u64,
+        keyType: &T) acquires RegistrarStore, NameOwnerStore {
+        let tld: NameID = get_tld_of_registrar_type(keyType);
+        let name_id = get_name_id_of(&tld, &name);
+        let owner_addr = signer::address_of(owner);
+        assert!(
+            exists<NameOwnerStore>(owner_addr),
+            error::not_found(ENAME_OWNER_STORE_UNINITIALIZED),
+        );
+        let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
+        assert!(
+            table::contains(&owner_store.names, name_id),
+            error::not_found(ENAME_NOT_OWNED_BY_ACCOUNT),
+        );
+        let name = table::borrow_mut(&mut owner_store.names, name_id);
+        // only unexpired name can be renewed.
+        assert!(
+            !is_name_expired(name),
+            error::not_found(ENAME_EXPIRED),
+        );
+        name.expired_at = name.expired_at + additional_duration_seconds;
+    }
+
+    /// burn an expired name of @p expired_name_id in @p owner's store.
     public entry fun burn_expired_name(
         owner: &signer,
         expired_name_id: NameID) acquires NameOwnerStore {
         let owner_addr = signer::address_of(owner);
         assert!(
             exists<NameOwnerStore>(owner_addr),
-            error::not_found(ENAME_NOT_OWNED_BY_ACCOUNT),
+            error::not_found(ENAME_OWNER_STORE_UNINITIALIZED),
         );
         let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
         assert!(
@@ -313,7 +387,8 @@ module apt_id::apt_id {
         let Name {
             parent: _,
             name: _,
-            expiredAt: _,
+            expired_at: _,
+            transferable: _,
             records,
         } = table::remove(
             &mut owner_store.names,
@@ -322,12 +397,14 @@ module apt_id::apt_id {
         destory_iterable_table(records)
     }
 
+    /// initialize a name owner store for @p account.
     public entry fun initialize_name_owner_store(account: &signer) {
         if (!exists<NameOwnerStore>(signer::address_of(account))) {
             move_to(
                 account,
                 NameOwnerStore {
                     names: table::new(),
+                    enable_direct_transfer: true,
                     deposit_events: account::new_event_handle<NameDepositEvent>(account),
                     withdraw_events: account::new_event_handle<NameWithdrawEvent>(account),
                 },
@@ -335,11 +412,26 @@ module apt_id::apt_id {
         }
     }
 
+    /// set direct transfer flag of @p account to @p is_enabled.
+    public entry fun set_direct_transfer_flag(
+        account: &signer,
+        is_enabled: bool) acquires NameOwnerStore {
+        let owner_addr = signer::address_of(account);
+        assert!(
+            exists<NameOwnerStore>(owner_addr),
+            error::not_found(ENAME_OWNER_STORE_UNINITIALIZED),
+        );
+        let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
+        owner_store.enable_direct_transfer = is_enabled;
+    }
+
     // ****** Name ******
+    /// resouce record key.
     struct RecordKey has copy, store, drop {
         name: String,
         type: String,
     }
+    // resource record value.
     struct RecordValue has copy, store, drop {
         ttl: u64,
         value: String,
@@ -365,7 +457,8 @@ module apt_id::apt_id {
     struct Name has store {
         parent: NameID,
         name: String,
-        expiredAt: u64,    // timestamp of expiration
+        expired_at: u64,    // timestamp of expiration
+        transferable: bool,
         records: IterableTable<RecordKey, RecordValue>,
         // TODO:
         // records update events?
@@ -384,6 +477,7 @@ module apt_id::apt_id {
         /// TLD Registrar will also keep use this store to
         /// TODO: We hope to use iterable_table but its TypeScript is not ready.
         names: Table<NameID, Name>,
+        enable_direct_transfer: bool,
         deposit_events: EventHandle<NameDepositEvent>,
         withdraw_events: EventHandle<NameWithdrawEvent>,
         // TODO: necessary? expired names are ignored by API.
@@ -424,7 +518,7 @@ module apt_id::apt_id {
 
     /// returns true if the name has been expired.
     public fun is_name_expired(name: &Name): bool {
-        name.expiredAt < now()
+        name.expired_at < now()
     }
 
     /// returns true when the name can be registered:
