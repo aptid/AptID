@@ -327,8 +327,11 @@ module apt_id::apt_id {
     }
 
     /// transfer @p name_id Name owned by @p from to @p to.
-    public entry fun direct_transfer(from: &signer, to: address, name_id: NameID)
+    /// TODO: Typescript tx builder does not support user-defined struct arg,
+    /// so we destruct it into name and tld, instead of a NameID.
+    public entry fun direct_transfer(from: &signer, to: address, name: String, tld: String)
         acquires NameOwnerStore, OwnerListStore {
+        let name_id = get_name_id_of(&get_tld_lable_name_id(&tld), &name);
         let name = withdraw_name(from, name_id);
         deposit_name(to, name);
     }
