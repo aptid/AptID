@@ -3,7 +3,7 @@ name = "DotAptTLD"
 version = "0.0.1"
 
 [addresses]
-dot_apt_registrar = "0xfb3e8bc44d50e040c39bb7dc4cef28e93078e7c6bd3db16b05cac2a41ce2b5d8"
+dot_apt_registrar = "0x8add34212cbe560856ac610865f9bc2e4ac49b65739d58e7f2c87125d73bad02"
 
 [dependencies]
 AptosFramework = { local = "../../aptos-core/aptos-move/framework/aptos-framework" }
