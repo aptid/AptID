@@ -7,4 +7,3 @@ apt_id = "0xd6f8440eabd59bfc0ca6dcf7bf864d206e9825e264faf14188af68a72f500bb9"
 
 [dependencies]
 AptosFramework = { local = "../../aptos-core/aptos-move/framework/aptos-framework" }
-DataStructure= { local = "../../aptos-core/aptos-move/move-examples/data_structures" }

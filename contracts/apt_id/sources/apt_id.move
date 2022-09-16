@@ -24,8 +24,10 @@ module apt_id::apt_id {
     use std::bcs;
     use std::option;
 
+    // ported to local package.
+    use apt_id::iterable_table::{Self, IterableTable};
+
     use aptos_std::aptos_hash::keccak256 as hash_algo;
-    use aptos_std::iterable_table::{Self, IterableTable};
     use aptos_std::table::{Self, Table};
     use aptos_std::type_info;
 
