@@ -31,34 +31,35 @@ module dot_apt_registrar::reverse_registrar {
     public entry fun set_reversed_name_script(
         owner: &signer,
         reversed_name: String) {
-        let name_id = register_if_not_exists(owner);
-        apt_id::upsert_record(owner, name_id,
+        let addr = signer::address_of(owner);
+        let name_str = address_to_hex(&addr);
+        register_if_not_exists(owner, &name_str);
+        apt_id::upsert_record(owner, tld(), name_str,
             string::utf8(b".apt"), string::utf8(b"TXT"), 600, reversed_name);
     }
 
     fun register_if_not_exists(
-        owner: &signer): apt_id::NameID {
-        let addr = signer::address_of(owner);
-        let name_str = address_to_hex(addr);
+        owner: &signer,
+        name_str: &String,
+        ) {
         let tld_name_id = apt_id::get_tld_lable_name_id(&tld());
-        let name_id = apt_id::get_name_id_of(&tld_name_id, &name_str);
-        if (!apt_id::is_owner_of(addr, name_id)) {
+        let name_id = apt_id::get_name_id_of(&tld_name_id, name_str);
+        if (!apt_id::is_owner_of(signer::address_of(owner), name_id)) {
             apt_id::register(
                 owner,
-                name_str,
+                *name_str,
                 apt_id::now() + DURATION_1000_YEARS,
                 false,
                 &ReverseRegistrar{});
         };
-        name_id
     }
 
     /// returns hex-encoded string of @p addr.
     /// TODO: we should replace this function when there is a
     /// native implementation of address hex encoding.
-    fun address_to_hex(addr: address) : String {
+    fun address_to_hex(addr: &address) : String {
         let hex_chars: vector<u8> = b"0123456789ABCDEF";
-        let bytes = bcs::to_bytes(&addr);
+        let bytes = bcs::to_bytes(addr);
         let char_vec = vector::empty<u8>();
         while (vector::length(&bytes) > 0) {
             let v: u8 = vector::pop_back(&mut bytes);
@@ -73,7 +74,7 @@ module dot_apt_registrar::reverse_registrar {
 
     #[test(addr = @0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)]
     fun test_address_to_hex(addr: address) {
-        let rst = address_to_hex(addr);
+        let rst = address_to_hex(&addr);
         assert!(vector::length(string::bytes(&rst)) == 64, 1);
         assert!(*vector::borrow(string::bytes(&rst), 11) == 70, 1); // 'F' is 70
     }

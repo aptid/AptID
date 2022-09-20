@@ -571,13 +571,15 @@ module apt_id::apt_id {
     /// upsert record to owner's name.
     public entry fun upsert_record(
         owner: &signer,
-        name_id: NameID,
+        name: String,
+        tld: String,
         record_name: String,
         record_type: String,
         ttl: u64,
         value: String,
     ) acquires NameOwnerStore {
         let owner_addr = signer::address_of(owner);
+        let name_id = get_name_id_of(&get_tld_lable_name_id(&tld), &name);
         require_is_owner_of(owner_addr, name_id);
         let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
         let name = table::borrow_mut(&mut owner_store.names, name_id);

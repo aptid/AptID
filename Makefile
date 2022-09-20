@@ -15,8 +15,8 @@ install-aptos-cli:
 run-local-node:
 	aptos node run-local-testnet --with-faucet # somehow test-dir option does not work: --test-dir local-node/
 
-.PHONY: purge-local-node
-purge-local-node:
+.PHONY: unsafe-purge-local-node
+unsafe-purge-local-node:
 	rm -rf .aptos/testnet
 
 .PHONY: faucet
