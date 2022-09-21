@@ -567,8 +567,8 @@ module apt_id::apt_id {
     /// upsert record to owner's name.
     public entry fun upsert_record(
         owner: &signer,
-        name: String,
         tld: String,
+        name: String,
         record_name: String,
         record_type: String,
         ttl: u64,
