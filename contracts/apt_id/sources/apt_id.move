@@ -46,7 +46,10 @@ module apt_id::apt_id {
         require_mod_publisher(signer::address_of(mod_publisher));
         if (!exists<OwnerListStore>(@apt_id)) {
             move_to(mod_publisher, OwnerListStore {
-                owners: table::new<NameID, address>(), });
+                owners: table::new<NameID, address>(),
+                deposit_events: account::new_event_handle<NameDepositEvent>(mod_publisher),
+                withdraw_events: account::new_event_handle<NameWithdrawEvent>(mod_publisher),
+            });
         };
         if (!exists<RegistrarStore>(@apt_id)) {
             move_to(mod_publisher, RegistrarStore { registrars: table::new() } );
@@ -285,14 +288,14 @@ module apt_id::apt_id {
         let name_id = get_name_id(&name);
         // move name to owner
         let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
-        table::add(&mut owner_store.names, name_id, name);
+        iterable_table::add(&mut owner_store.names, name_id, name);
         // update name_id => address mapping.
         let owner_list_store = borrow_global_mut<OwnerListStore>(@apt_id);
         table::upsert(&mut owner_list_store.owners, name_id, owner_addr);
         // emit events
         event::emit_event<NameDepositEvent>(
-            &mut owner_store.deposit_events,
-            NameDepositEvent { id: name_id },
+            &mut owner_list_store.deposit_events,
+            NameDepositEvent { id: name_id, to: owner_addr },
         );
     }
 
@@ -305,15 +308,15 @@ module apt_id::apt_id {
         // update name_id => address mapping.
         let owner_list_store = borrow_global_mut<OwnerListStore>(@apt_id);
         let _ = table::remove(&mut owner_list_store.owners, name_id);
-        // update owner store
-        let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
         // emit events
         event::emit_event<NameWithdrawEvent>(
-            &mut owner_store.withdraw_events,
-            NameWithdrawEvent { id: name_id },
+            &mut owner_list_store.withdraw_events,
+            NameWithdrawEvent { id: name_id, from: owner_addr },
         );
+        // update owner store
+        let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
         // extract name from owner store.
-        let name = table::remove(
+        let name = iterable_table::remove(
             &mut owner_store.names,
             name_id,
         );
@@ -354,10 +357,10 @@ module apt_id::apt_id {
         );
         let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
         assert!(
-            table::contains(&owner_store.names, name_id),
+            iterable_table::contains(&owner_store.names, name_id),
             error::not_found(ENAME_NOT_OWNED_BY_ACCOUNT),
         );
-        let name = table::borrow_mut(&mut owner_store.names, name_id);
+        let name = iterable_table::borrow_mut(&mut owner_store.names, name_id);
         // only unexpired name can be renewed.
         assert!(
             !is_name_expired(name),
@@ -377,10 +380,10 @@ module apt_id::apt_id {
         );
         let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
         assert!(
-            table::contains(&owner_store.names, expired_name_id),
+            iterable_table::contains(&owner_store.names, expired_name_id),
             error::not_found(ENAME_NOT_OWNED_BY_ACCOUNT),
         );
-        let name = table::borrow(&owner_store.names, expired_name_id);
+        let name = iterable_table::borrow(&owner_store.names, expired_name_id);
         // only expired name can be burned.
         assert!(
             is_name_expired(name),
@@ -392,7 +395,7 @@ module apt_id::apt_id {
             expired_at: _,
             transferable: _,
             records,
-        } = table::remove(
+        } = iterable_table::remove(
             &mut owner_store.names,
             expired_name_id,
         );
@@ -405,10 +408,9 @@ module apt_id::apt_id {
             move_to(
                 account,
                 NameOwnerStore {
-                    names: table::new(),
+                    names: iterable_table::new(),
                     enable_direct_transfer: true,
-                    deposit_events: account::new_event_handle<NameDepositEvent>(account),
-                    withdraw_events: account::new_event_handle<NameWithdrawEvent>(account),
+
                 },
             );
         }
@@ -435,15 +437,15 @@ module apt_id::apt_id {
     }
     // resource record value.
     struct RecordValue has copy, store, drop {
-        ttl: u64,
         value: String,
+        ttl: u64,
     }
 
     public fun new_record_key(name: String, type: String): RecordKey {
         return RecordKey { name: name, type: type }
     }
 
-    public fun new_record_value(ttl: u64, value: String): RecordValue {
+    public fun new_record_value(value: String, ttl: u64): RecordValue {
         return RecordValue { ttl: ttl, value: value }
     }
     // TODO: add getters for record key and value.
@@ -455,7 +457,6 @@ module apt_id::apt_id {
     /// (2) expired names can only be burned.
     /// (3) unexpired names cannot be burned.
     /// (4) TLD names will have empty parent hash.
-    /// (5) when expiredAt is 0, the name will NEVER expire.
     struct Name has store {
         parent: NameID,
         name: String,
@@ -466,33 +467,28 @@ module apt_id::apt_id {
         // records update events?
     }
 
-    struct NameDepositEvent has drop, store {
-        id: NameID,
-    }
-    struct NameWithdrawEvent has drop, store {
-        id: NameID,
-    }
-
     struct NameOwnerStore has key {
         /// Mapping name hash to actual name.
         /// Name Owners store their domain use this Store under their account.
-        /// TLD Registrar will also keep use this store to
-        /// TODO: We hope to use iterable_table but its TypeScript is not ready.
-        names: Table<NameID, Name>,
+        names: IterableTable<NameID, Name>,
         enable_direct_transfer: bool,
-        deposit_events: EventHandle<NameDepositEvent>,
-        withdraw_events: EventHandle<NameWithdrawEvent>,
-        // TODO: necessary? expired names are ignored by API.
-        // burn_events: EventHandle<BurnTokenEvent>,
+    }
+
+    struct NameDepositEvent has drop, store {
+        id: NameID,
+        to: address,
+    }
+
+    struct NameWithdrawEvent has drop, store {
+        id: NameID,
+        from: address,
     }
 
     struct OwnerListStore has key {
         /// Mapping a name hash to the address of its owner.
         owners: Table<NameID, address>,
-        // TODO: necessary? already stored in owner's names store.
-        // deposit_events: EventHandle<DepositEvent>,
-        // withdraw_events: EventHandle<WithdrawEvent>,
-        // burn_events: EventHandle<BurnTokenEvent>,
+        deposit_events: EventHandle<NameDepositEvent>,
+        withdraw_events: EventHandle<NameWithdrawEvent>,
     }
 
     /// The ID of any name, including TLDs.
@@ -533,7 +529,7 @@ module apt_id::apt_id {
         if (table::contains(&owner_store.owners, *name_id)) {
             let owner = table::borrow(&owner_store.owners, *name_id);
             let name_store = borrow_global<NameOwnerStore>(*owner);
-            is_name_expired(table::borrow(&name_store.names, *name_id))
+            is_name_expired(iterable_table::borrow(&name_store.names, *name_id))
         } else {
             true
         }
@@ -547,10 +543,10 @@ module apt_id::apt_id {
             return false
         };
         let owner_store = borrow_global<NameOwnerStore>(addr);
-        if (!table::contains(&owner_store.names, name_id)) {
+        if (!iterable_table::contains(&owner_store.names, name_id)) {
             return false
         };
-        let name = table::borrow(&owner_store.names, name_id);
+        let name = iterable_table::borrow(&owner_store.names, name_id);
         // expired names are considered to be not-owned by the account.
         if (is_name_expired(name)) {
             return false
@@ -582,7 +578,7 @@ module apt_id::apt_id {
         let name_id = get_name_id_of(&get_tld_lable_name_id(&tld), &name);
         require_is_owner_of(owner_addr, name_id);
         let owner_store = borrow_global_mut<NameOwnerStore>(owner_addr);
-        let name = table::borrow_mut(&mut owner_store.names, name_id);
+        let name = iterable_table::borrow_mut(&mut owner_store.names, name_id);
         let key = RecordKey { name: record_name, type: record_type };
         let new_val = RecordValue { value : value, ttl: ttl };
         if (iterable_table::contains(&name.records, key)) {
@@ -602,7 +598,7 @@ module apt_id::apt_id {
     ) : (String, u64) acquires NameOwnerStore {
         require_is_owner_of(owner_addr, name_id);
         let owner_store = borrow_global<NameOwnerStore>(owner_addr);
-        let name = table::borrow(&owner_store.names, name_id);
+        let name = iterable_table::borrow(&owner_store.names, name_id);
         let key = RecordKey { name: record_name, type: record_type };
         let record = iterable_table::borrow(&name.records, key);
         (record.value, record.ttl)
