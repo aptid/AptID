@@ -1,5 +1,5 @@
 /// This module is demo registrar for TLD `.apt` that you can register
-/// a *.apt name with 1 aptos coin for 1 day.
+/// a *.apt name with 1000 aptos coin amount for 1 day.
 module dot_apt_registrar::one_coin_registrar {
     use std::error;
     use std::string::{Self, String};
@@ -12,6 +12,10 @@ module dot_apt_registrar::one_coin_registrar {
     struct OneCoinRegistrar has drop {}
 
     const EZERO_COIN_NOW_ALLOWED: u64 = 3000;
+
+    public fun price(): u64 {
+        1000
+    }
 
     public fun tld(): String {
         string::utf8(b"apt")
@@ -35,14 +39,17 @@ module dot_apt_registrar::one_coin_registrar {
         owner: &signer,
         amount: u64,
         name: String) {
+        // round down to N * price, the base unit.
+        amount = amount / price() * price();
         assert!(
             amount > 0,
             error::invalid_argument(EZERO_COIN_NOW_ALLOWED),
         );
+        let duration = 24 * 3600 * (amount / price());
         // TODO: a native utf-8 rune count function would be good,
         // if not, we will implement a simple one in move.
         coin::transfer<aptos_coin::AptosCoin>(owner, revenue_account(), amount);
-        register(owner, name, amount * 3600 * 24)
+        register(owner, name, duration)
     }
 
     fun register(
@@ -62,12 +69,13 @@ module dot_apt_registrar::one_coin_registrar {
         owner: &signer,
         amount: u64,
         name: String) {
+        amount = amount / price() * price();
         assert!(
             amount > 0,
             error::invalid_argument(EZERO_COIN_NOW_ALLOWED),
         );
+        let duration = 24 * 3600 * (amount / price());
         coin::transfer<aptos_coin::AptosCoin>(owner, revenue_account(), amount);
-        apt_id::renew_name(owner, name, amount * 3600 * 24, &OneCoinRegistrar{});
+        apt_id::renew_name(owner, name, duration, &OneCoinRegistrar{});
     }
-
 }
