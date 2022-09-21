@@ -72,11 +72,15 @@ module dot_apt_registrar::reverse_registrar {
         string::utf8(char_vec)
     }
 
-    #[test(addr = @0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)]
+    #[test(addr = @0x1234567890123456789012345678901234567890123456789012345678ABCDEF)]
     fun test_address_to_hex(addr: address) {
         let rst = address_to_hex(&addr);
         assert!(vector::length(string::bytes(&rst)) == 64, 1);
-        assert!(*vector::borrow(string::bytes(&rst), 11) == 70, 1); // 'F' is 70
+        assert!(*vector::borrow(string::bytes(&rst), 63) == 70, 1); // 'F' is 70
+        assert!(*vector::borrow(string::bytes(&rst), 62) == 69, 1);
+        assert!(*vector::borrow(string::bytes(&rst), 61) == 68, 1);
+        assert!(*vector::borrow(string::bytes(&rst), 0) == 49, 1); // '1' is 49
+        assert!(*vector::borrow(string::bytes(&rst), 1) == 50, 1);
+        assert!(*vector::borrow(string::bytes(&rst), 2) == 51, 1);
     }
-
 }
