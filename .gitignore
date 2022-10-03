@@ -3,3 +3,4 @@ contracts/dot_apt_tld/build/
 local-node/
 .aptos/testnet
 devnet/
+testnet/
