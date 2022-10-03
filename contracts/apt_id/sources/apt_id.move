@@ -4,17 +4,14 @@
 /// (2) domain NFT.
 /// (3) a simple resolver that resolves names to an address.
 /// There are still many undecided design choices:
-/// (1) store name hash or raw string?
-///     + raw string better for common cases.
-///     + hash allows us to handle subdomains without enforcing ambiguity check on names.
+/// (1) breaking: update hash schemma to drop bcs encoding.
 /// (2) sub-domain support. We can support sub-domain using the same logics
 ///     as how we support different TLDs. BUT Current implementation does not
 ///     take this feature into account.
-/// (3) events storage: under owner's account and both apt_id module publisher's account?
-/// (4) anyway to specilize a drop-able table?
-/// (5) TODO: Use reference instead of copy when possible.
-/// (6) directly transfer is enabled by default.
-/// (7) TODO: integration with 0x3::token: only creater can mint NFT is not acceptable
+/// (3) anyway to specilize a drop-able table?
+/// (4) TODO: Use reference instead of copy when possible.
+/// (5) directly transfer is enabled by default.
+/// (6) TODO: integration with 0x3::token: only creater can mint NFT is not acceptable
 ///           for apt_id. The module should only be able to set up rules of name registration.
 module apt_id::apt_id {
     use std::error;
